@@ -18,7 +18,7 @@ use Eluceo\iCal\Property;
 /**
  * Implementation of the EVENT component
  */
-class Event extends Component
+class FreeBusy extends Component
 {
     /**
      * @var string
@@ -37,42 +37,33 @@ class Event extends Component
      */
     protected $dtEnd;
 
-    /**
-     * @var boolean
-     */
-    protected $noTime = false;
+	/**
+	 * @var array
+	 */
+	protected $freeBusyTimes = array();
+
 
     /**
      * @var string
      */
     protected $url;
 
-    /**
-     * @var string
-     */
-    protected $location;
-
 	/**
 	 * @var string
 	 */
-	protected $summary;
+	protected $attendee;
 
 	/**
+     * @var string
+     */
+    protected $organizer;
+
+    /**
      * If set to true the timezone will be added to the event
      *
      * @var bool
      */
     protected $useTimezone = false;
-
-    /**
-     * @var int
-     */
-    protected $sequence = 0;
-
-    /**
-     * @var string
-     */
-    protected $description;
 
     function __construct($uniqueId = null)
     {
@@ -89,7 +80,7 @@ class Event extends Component
      */
     public function getType()
     {
-        return 'VEVENT';
+        return 'VFREEBUSY';
     }
 
     /**
@@ -99,32 +90,31 @@ class Event extends Component
     {
         $this->properties = new PropertyBag;
 
+    	if (count($this->freeBusyTimes) === 0) {
+    		return;
+    	}
+
         // mandatory information
-        $this->properties->set('UID', $this->uniqueId);
-        $this->properties->add($this->buildDateTimeProperty('DTSTAMP', $this->dtStamp, false));
-        $this->properties->add($this->buildDateTimeProperty('DTSTART', $this->dtStart, $this->noTime));
-        $this->properties->add($this->buildDateTimeProperty('DTEND', $this->dtEnd, $this->noTime));
-        $this->properties->set('SEQUENCE', $this->sequence);
+    	$this->properties->set('UID', $this->uniqueId);
+    	$this->properties->set('ATTENDEE', $this->attendee);
+    	$this->properties->add($this->buildDateTimeProperty('DTSTAMP', $this->dtStamp, false));
+        $this->properties->add($this->buildDateTimeProperty('DTSTART', $this->dtStart, false));
+        $this->properties->add($this->buildDateTimeProperty('DTEND', $this->dtEnd, false));
+
+    	ksort($this->freeBusyTimes);
+    	foreach ($this->freeBusyTimes as $fsbItem){
+    		$fsbType = $fsbItem[0];
+    		$fsbValue = $fsbItem[1];
+    		$this->properties->set('FREEBUSY', $fsbValue, array('FSBTYPE' => $fsbType));
+    	}
+
+        $this->properties->set('ORGANIZER', $this->organizer);
 
         // optional information
         if (null != $this->url) {
             $this->properties->set('URL', $this->url);
         }
 
-        if (null != $this->location) {
-            $this->properties->set('LOCATION', $this->location);
-        }
-
-        if (null != $this->summary) {
-            $this->properties->set('SUMMARY', $this->summary);
-        }
-
-        if (null != $this->description) {
-            $this->properties->set('DESCRIPTION', $this->description);
-        }
-
-        if( $this->noTime )
-            $this->properties->set('X-MICROSOFT-CDO-ALLDAYEVENT', 'TRUE');
     }
 
     /**
@@ -193,25 +183,33 @@ class Event extends Component
 		$this->dtStamp = $dtStamp;
 	}
 
-	public function setLocation($location)
-    {
-        $this->location = $location;
-    }
+	public function setAttendee($attendee)
+	{
+		$this->attendee = $attendee;
+	}
 
-    public function setNoTime($noTime)
-    {
-        $this->noTime = $noTime;
-    }
+	public function addFreeBusyTime($fbType, \DateTime $dtFrom, \DateTime $dtTo)
+	{
+		if ((!isset($this->dtStart)) || $dtFrom < $this->dtStart) {
+			$this->dtStart = $dtFrom;
+		}
+		if ((!isset($this->dtEnd)) || $dtTo < $this->dtEnd) {
+			$this->dtEnd = $dtTo;
+		}
 
-    public function setSequence($sequence)
-    {
-        $this->sequence = $sequence;
-    }
+		$strFrom = $this->getDateString($dtFrom, false);
+		$strTo = $this->getDateString($dtTo, false);
 
-    public function setSummary($summary)
-    {
-        $this->summary = $summary;
-    }
+		$fbvalue = $strFrom . "/" . $strTo;
+
+		// store by fbvalue as key so we can sort into correct order before publishing!
+		$this->freeBusyTimes[$fbvalue] = array($fbType, $fbvalue);
+	}
+
+	public function setOrganizer($organizer)
+	{
+		$this->organizer = $organizer;
+	}
 
     public function setUniqueId($uniqueId)
     {
@@ -233,19 +231,4 @@ class Event extends Component
         return $this->useTimezone;
     }
 
-    /**
-     * @param string $description
-     */
-    public function setDescription($description)
-    {
-        $this->description = $description;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDescription()
-    {
-        return $this->description;
-    }
 }

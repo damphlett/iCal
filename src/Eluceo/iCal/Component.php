@@ -55,7 +55,28 @@ abstract class Component
         }
     }
 
-    /**
+	/**
+	 * Checks if a Component with the specified key exists
+	 *
+	 * @param string    $key        The key of the Component
+	 */
+	public function componentExistsByKey($key)
+	{
+		return array_key_exists($key, $this->components);
+	}
+
+	/**
+	 * Gets a Component with the specified key exists
+	 *
+	 * @param string    $key        The key of the Component
+	 * @return Component
+	 */
+	public function getComponentByKey($key)
+	{
+		return ($this->componentExistsByKey($key)) ? $this->components[$key] : null;
+	}
+
+/**
      * Renders an array containing the lines of the iCal file
      *
      * @return array

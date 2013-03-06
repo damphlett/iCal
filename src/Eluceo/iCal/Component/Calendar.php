@@ -29,6 +29,11 @@ class Calendar extends Component
      */
     protected $prodId = null;
     protected $name = null;
+	protected $method = 'PUBLISH';
+	protected $errormsg = null;
+	protected $success = null;
+
+	protected $lastFreeBusySectionKey = null;
 
     function __construct($prodId)
     {
@@ -46,11 +51,30 @@ class Calendar extends Component
     {
         return 'VCALENDAR';
     }
-    
-    public function setName( $name )
-    {
-        $this->name = $name;
-    }
+
+	public function setErrorMsg( $message )
+	{
+		$this->errormsg = $message;
+	}
+
+	public function setSuccess($success = true)
+	{
+		$this->success = $success;
+	}
+
+	public function setFailure()
+	{
+		$this->success = false;
+	}
+
+	public function setName( $name )
+	{
+		$this->name = $name;
+	}
+
+	public function setMethod( $method ) {
+		$this->method = $method;
+	}
 
     /**
      * {@inheritdoc}
@@ -59,27 +83,62 @@ class Calendar extends Component
     {
         $this->properties = new PropertyBag;
         $this->properties->set('VERSION', '2.0');
-        $this->properties->set('PRODID', $this->prodId);
-        
+    	$this->properties->set('PRODID', $this->prodId);
+    	$this->properties->set('METHOD', $this->method);
+
+    	if ($this->errormsg) {
+    		$this->properties->set( 'X-ERRORMSG', $this->errormsg );
+    	}
+
+    	if (isset($this->success)) {
+    		$this->properties->set( 'X-SUCCESS', $this->success );
+    	}
+
         if( $this->name )
             $this->properties->set( 'X-WR-CALNAME', $this->name );
     }
 
-    /**
-     * Adds an Event to the Calendar
-     *
-     * Wrapper for addComponent()
-     *
-     * @see Eluceo\iCal::addComponent
-     *
-     * @param Event $event
-     */
-    public function addEvent(Event $event)
-    {
-        $this->addComponent($event);
-    }
+	/**
+	 * Adds an Event to the Calendar
+	 *
+	 * Wrapper for addComponent()
+	 *
+	 * @see Eluceo\iCal::addComponent
+	 *
+	 * @param Event $event
+	 */
+	public function addEvent(Event $event)
+	{
+		$this->addComponent($event);
+	}
 
-    /**
+	/**
+	 * Adds a FreeBusy Section to the Calendar
+	 *
+	 * Wrapper for addComponent()
+	 *
+	 * @see Eluceo\iCal::addComponent
+	 *
+	 * @param FreeBusy $freeBusySection
+	 * @param string $key
+	 */
+	public function addFreeBusySection(FreeBusy $freeBusySection, $key)
+	{
+		$this->addComponent($freeBusySection, $key);
+		$this->lastFreeBusySectionKey = $key;
+	}
+
+	public function addFreeBusyTime($fbType, \DateTime $dtFrom, \DateTime $dtTo, $freeBusySectionKey = null)
+	{
+		if ($freeBusySectionKey === null) {
+			$freeBusySectionKey = $this->lastFreeBusySectionKey;
+		}
+		$freeBusySection = $this->getComponentByKey($freeBusySectionKey);
+		if ($freeBusySection !== null) {
+			$freeBusySection->addFreeBusyTime($fbType, $dtFrom, $dtTo);
+		}
+	}
+/**
      * Not needed here.
      *
      * @todo Remove this method

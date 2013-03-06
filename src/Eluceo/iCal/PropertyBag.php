@@ -57,10 +57,11 @@ class PropertyBag implements \IteratorAggregate
      */
     public function add(Property $property)
     {
-        // Property already exists?
-        if (null !== $this->get($property->getName())) {
-            throw new \Exception("Property with name '{$property->getName()}' already exists");
-        }
+		// DSA - VFREEBUSY can take multiple FREEBUSY properties - so drop this limiting test
+//        // Property already exists?
+//        if (null !== $this->get($property->getName())) {
+//            throw new \Exception("Property with name '{$property->getName()}' already exists");
+//        }
 
         $this->elements[] = $property;
     }
