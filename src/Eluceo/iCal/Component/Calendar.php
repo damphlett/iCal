@@ -28,14 +28,16 @@ class Calendar extends Component
      * @var string
      */
     protected $prodId = null;
+    protected $method = null;
     protected $name = null;
 	protected $method = 'PUBLISH';
 	protected $errormsg = null;
 	protected $success = null;
 
 	protected $lastFreeBusySectionKey = null;
+    protected $timezone = null;
 
-    function __construct($prodId)
+    public function __construct($prodId)
     {
         if (empty($prodId)) {
             throw new \UnexpectedValueException('PRODID cannot be empty');
@@ -72,9 +74,15 @@ class Calendar extends Component
 		$this->name = $name;
 	}
 
-	public function setMethod( $method ) {
+	public function setMethod( $method )
+	{
 		$this->method = $method;
 	}
+
+    public function setTimezone($timezone)
+    {
+        $this->timezone = $timezone;
+    }
 
     /**
      * {@inheritdoc}
@@ -83,8 +91,11 @@ class Calendar extends Component
     {
         $this->properties = new PropertyBag;
         $this->properties->set('VERSION', '2.0');
-    	$this->properties->set('PRODID', $this->prodId);
-    	$this->properties->set('METHOD', $this->method);
+        $this->properties->set('PRODID', $this->prodId);
+
+        if ($this->method) {
+            $this->properties->set('METHOD', $this->method);
+        }
 
     	if ($this->errormsg) {
     		$this->properties->set( 'X-ERRORMSG', $this->errormsg );
@@ -94,8 +105,14 @@ class Calendar extends Component
     		$this->properties->set( 'X-SUCCESS', $this->success );
     	}
 
-        if( $this->name )
-            $this->properties->set( 'X-WR-CALNAME', $this->name );
+        if ($this->name) {
+            $this->properties->set('X-WR-CALNAME', $this->name);
+        }
+
+        if ($this->timezone) {
+            $this->properties->set('X-WR-TIMEZONE', $this->timezone);
+            $this->addComponent(new Timezone($this->timezone));
+        }
     }
 
 	/**

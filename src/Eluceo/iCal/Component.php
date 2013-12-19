@@ -43,8 +43,8 @@ abstract class Component
      *
      * If $key is given, the component at $key will be replaced else the component will be append.
      *
-     * @param Component $component  The Component that will be added
-     * @param null      $key        The key of the Component
+     * @param Component $component The Component that will be added
+     * @param null      $key       The key of the Component
      */
     protected function addComponent(Component $component, $key = null)
     {
@@ -115,7 +115,8 @@ abstract class Component
      *
      * @link http://www.ietf.org/rfc/rfc2445.txt
      *
-     * @param $line
+     * @param $string
+     *
      * @return string
      */
     public function fold($string)
@@ -153,6 +154,16 @@ abstract class Component
         }
 
         return implode("\r\n", $lines);
+    }
+
+    /**
+     * Renders the output when treating the class as a string
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->render();
     }
 
     /**
